@@ -1,2 +1,2 @@
 # LUCAlex
-Meine Beiträge für das MAturaprojekt von Alexander und Staffner
+Meine Beiträge für das Maturaprojekt von Schreyer und Staffner
