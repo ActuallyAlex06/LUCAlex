@@ -1,0 +1,121 @@
+Operators: 
+
+Basic Math
+-> Addition +; 
+-> Multiplication *; 
+-> Division /; 
+-> Subtraction -; 
+
+Advanced Math
+-> Root 2/4
+-> Log 100\3
+-> Factorial !;
+-> Mod %; 
+-> Power **; 
+
+
+
+Variables: 
+
+Primitive Datatypes
+int, double, bool, null
+
+Non - Primitive Datatypes 
+string, complex, matrix
+
+Variable Definition:
+
+Normal
+num1 := 2;
+
+Specific Type
+num1 int = 2;
+
+
+
+Methods:
+
+Basic Definition (with parameters)
+f name(int num1) { }
+
+Definition WithoutParameters
+f name { }
+
+Pure function
+pf name (int num1, int num2) { return num1 + num2; } 
+
+
+
+Loops:
+
+If Query
+if true { } elif false { } else { }
+
+For Loop
+for i = 1; i < 20; +; { }
+
+ForEach Loop
+for lst { }
+
+While Loop
+while true { }
+
+
+
+Error Handling: 
+
+Single Line of Code
+int i = 10; ? myFunc(e) { }
+
+More Lines Of Code
+{ int i = 10; 
+int a = 9; } myFunc(e)
+
+myFunc(e) { throwNewException; }
+
+
+
+Lamda
+
+Pure Function
+unnamed (x, y) { return x + y; } 
+
+Normal Function (No return) 
+unnamed (x, y) { }
+
+
+
+Classes:
+
+Class Definition: 
+class Person (string name, int age) { }
+
+Definition More constructors
+class Person (string name, int age) { Person(string name, int age, int height) { } }
+
+Get & Set
+
+
+
+Key Words: 
+
+Loops
+for, while, if, elif, else, 
+
+For Loop
+stop, continue
+
+If Loop
+or, and
+
+Method: 
+return
+
+Comparison Operator: 
+is, not
+
+Lamda: 
+unnamed
+
+
+
