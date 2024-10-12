@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace LUC
 {
@@ -15,9 +16,9 @@ namespace LUC
             string inputcode = Recources.ReadFile("Applications/Code.lug");
             Tokenizer(inputcode.Split(new string[] { Environment.NewLine }, StringSplitOptions.None).ToList()); ;
 
-            foreach(List<string> tokens in tokens.Values)
+            foreach (List<string> tokens in tokens.Values)
             {
-                foreach(string token in tokens)
+                foreach (string token in tokens)
                 {
                     Console.Write(token);
                 }
@@ -25,8 +26,7 @@ namespace LUC
             }
         }
 
-        int currentpos = 0;
-
+        string restline = String.Empty;
 
         private void Tokenizer(List<string> lines)
         {
@@ -35,42 +35,35 @@ namespace LUC
             foreach(string line in lines)
             {
                 List<string> linetokens = new List<string>();
+                restline = line;
 
-                while (currentpos < line.Length)
+                while (restline.Length > 0)
                 {
-                    char currentoken = line[currentpos];
-
-                    DefineToken(linetokens, currentoken, line);
+                    DefineTokens(linetokens);
                 }
 
                 tokens.Add(linenum, linetokens);
                 linenum++;
-                currentpos = 0;
             }
         }
         
-        private void DefineToken(List<string> linetokens, char current, string restline)
-        {
-            currentpos++;
-
-            switch (current)
+        private void DefineTokens(List<string> linetokens)
+        {        
+            switch (restline[0])
             {
-                #region BasicMath
+                #region MathOperators
+                case ' ': restline = restline.Remove(0, 1); break;
+                case '-':
+                case '*':
+                case '/':
+                case '+':
+                case '=':
 
-                    case ' ': break; 
-                    case '+': linetokens.Add("(operator, +)"); break;
-                    case '-': linetokens.Add("(operator, -)"); break;
-                    case '*': linetokens.Add("(operator, *)"); break;
-                    case '/': linetokens.Add("(operator, /)"); break;
-                    
-                #endregion
+                    AddToken("(operator, " + restline[0] + ")", 1, linetokens);
 
-                #region VariableDef
-                case ':':
-                    currentpos++;
-                    linetokens.Add("(operator, :=)"); break;
+                break;
 
-                case '=': linetokens.Add("(operator, =)"); break;
+                case ':': AddToken("(operator, :=)", 2, linetokens); break;
                 #endregion
 
                 #region Numbers
@@ -85,79 +78,71 @@ namespace LUC
                 case '8':
                 case '9':
 
-                    string enterednum = restline[currentpos - 1].ToString();
-                    int nextpos = currentpos;
-                    while (int.TryParse(restline[nextpos].ToString(), out int a))
-                    {                    
-                        enterednum = enterednum + "" + a;
-                        nextpos++;
+                    string finalnum = restline[0].ToString();
+                    int nextchar = 1;
+                    while (int.TryParse(restline[nextchar].ToString(), out int a))
+                    {
+                        finalnum = finalnum + "" + a;
+                        nextchar++;
                     }
 
-                    currentpos = currentpos + nextpos - currentpos;
-                    linetokens.Add("(literal, " + enterednum + ")");
+                    AddToken("(literal, " + finalnum + ")", nextchar, linetokens);
 
-                    break;
+                break;
                 #endregion
 
                 #region Seperators
-                case ';': linetokens.Add("(seperator, ;)"); break;
-                case '(': linetokens.Add("(seperator, ()"); break;
-                case ')': linetokens.Add("(seperator, ))"); break;
-                case '{': linetokens.Add("(seperator, {)"); break;
-                case '}': linetokens.Add("(seperator, ])"); break;
+
+                case ';': 
+                case '(': 
+                case ')': 
+                case '{': 
+                case '}': AddToken("(seperator, " + restline[0] + ")", 1, linetokens); break;
                 #endregion
 
-                case 'i':
-
-                    CheckIfKeyword(linetokens, "int", restline);
-                 
-                    break;
-
-                case 's':
-
-                    CheckIfKeyword(linetokens, "string", restline);
-
-                    break;
+                #region Keywords
+                case 'i': CheckIfKeyword(linetokens, "int"); break; 
+                #endregion
 
                 default:
-                    
-                    string name = restline[currentpos - 1].ToString();
-                    int nextchara = currentpos;
-                    
-                    while(!restline[nextchara].Equals(' '))
-                    {
 
+                    string name = restline[0].ToString();
+
+                    int nextchara = 1;
+                    while (!restline[nextchara].Equals(' '))
+                    {
                         name = name + "" + restline[nextchara];
                         nextchara++;
                     }
 
-                    currentpos = currentpos + nextchara - currentpos;
-                    linetokens.Add("(identifier, " + name + ")");
+                    AddToken("(identifier, " +  name + ")", nextchara, linetokens);
 
                     break;
             }
         }
 
-        private void CheckIfKeyword(List<string> linetokens, string word, string restline)
+        private void AddToken(string token, int remove, List<string> tokens)
         {
-            int index = 0;
+            tokens.Add(token);
+            restline = restline.Remove(0, remove);
+        }
+
+        private void CheckIfKeyword(List<string> linetokens, string word)
+        {
             bool check = true;
 
-            for(int i = currentpos - 1; i < currentpos + word.Length - 1; i++)
+            for (int i = 0; i < word.Length; i++)
             {
-                if (!word[index].Equals(restline[i]))
+                if (!word[i].Equals(restline[i]))
                 {
                     check = false;
                 }
-
-                index++;
             }
 
-            if(check ) 
+            if (check)
             {
-                linetokens.Add("(Keyword, " + word + ")");
-                currentpos = currentpos + word.Length - 1;
-            }   
+                AddToken("(keyword, " + word + ")", word.Length, linetokens);
+            }
         }
     }
 }
