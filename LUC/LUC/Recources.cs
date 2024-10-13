@@ -23,6 +23,7 @@ namespace LUC
             }
             catch (Exception)
             {
+                // COMMENT: Why should the program keep running after this case?
                 Console.WriteLine("Could not find File!");
                 return "";
             }
