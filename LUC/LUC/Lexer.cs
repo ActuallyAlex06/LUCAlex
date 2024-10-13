@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -40,6 +42,7 @@ namespace LUC
                 while (restline.Length > 0)
                 {
                     DefineTokens(linetokens);
+                    Console.WriteLine(restline);
                 }
 
                 tokens.Add(linenum, linetokens);
@@ -47,6 +50,7 @@ namespace LUC
             }
         }
         
+        //Fix Bugs with numbers or identifiers at end of line
         private void DefineTokens(List<string> linetokens)
         {        
             switch (restline[0])
@@ -78,15 +82,8 @@ namespace LUC
                 case '8':
                 case '9':
 
-                    string finalnum = restline[0].ToString();
-                    int nextchar = 1;
-                    while (int.TryParse(restline[nextchar].ToString(), out int a))
-                    {
-                        finalnum = finalnum + "" + a;
-                        nextchar++;
-                    }
-
-                    AddToken("(literal, " + finalnum + ")", nextchar, linetokens);
+                    string finalnum = CreateIdentifier(curchara => !int.TryParse(restline[curchara].ToString(), out int a));
+                    AddToken("(literal, " + finalnum + ")", finalnum.Length, linetokens);
 
                 break;
                 #endregion
@@ -100,24 +97,59 @@ namespace LUC
                 case '}': AddToken("(seperator, " + restline[0] + ")", 1, linetokens); break;
                 #endregion
 
+                case '"':
+
+                    string strterm = CreateIdentifier(curchara => restline[curchara].Equals('"')) + '"';
+                    AddToken("(literal, " + strterm + ")", strterm.Length + 1, linetokens);
+
+                    break;
+
                 #region Keywords
-                case 'i': CheckIfKeyword(linetokens, "int"); break; 
+                case 'i': CheckForKeyword(["int", "integer"], linetokens); break;
+                case 's': CheckForKeyword(["string"], linetokens); break;
+                case 'b': CheckForKeyword(["bool"], linetokens); break;
                 #endregion
 
                 default:
 
-                    string name = restline[0].ToString();
-
-                    int nextchara = 1;
-                    while (!restline[nextchara].Equals(' '))
-                    {
-                        name = name + "" + restline[nextchara];
-                        nextchara++;
-                    }
-
-                    AddToken("(identifier, " +  name + ")", nextchara, linetokens);
+                    string word = CreateIdentifier(curchara => restline[curchara].Equals(' '));
+                    AddToken("(identifier, " + word + ")", word.Length, linetokens);
 
                     break;
+            }
+        }
+
+        private string CreateIdentifier(Func<int, bool> condition)
+        {
+            string name = restline[0].ToString();
+
+            int nextchara = 1;
+            while (!condition(nextchara))
+            {
+                name = name + "" + restline[nextchara];
+                nextchara++;
+            }
+
+            return name;
+        }
+
+        private void CheckForKeyword(List<string> keywords, List<string> linetokens)
+        {
+            string word = CreateIdentifier(curchara => restline[curchara].Equals(' '));
+            bool iskeyword = true;
+
+            foreach(string term in keywords)
+            {
+                if (term.Equals(word))
+                {
+                    AddToken("(keyword, " + word + ")", word.Length, linetokens);
+                    iskeyword = false;
+                }
+            }
+
+            if(iskeyword)
+            {
+                AddToken("(identifier, " + word + ")", word.Length, linetokens);
             }
         }
 
@@ -125,24 +157,6 @@ namespace LUC
         {
             tokens.Add(token);
             restline = restline.Remove(0, remove);
-        }
-
-        private void CheckIfKeyword(List<string> linetokens, string word)
-        {
-            bool check = true;
-
-            for (int i = 0; i < word.Length; i++)
-            {
-                if (!word[i].Equals(restline[i]))
-                {
-                    check = false;
-                }
-            }
-
-            if (check)
-            {
-                AddToken("(keyword, " + word + ")", word.Length, linetokens);
-            }
         }
     }
 }
