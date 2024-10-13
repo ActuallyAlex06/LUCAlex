@@ -1,0 +1,171 @@
+Grammar
+
+Introduction:
+This Document shows the structure and different complexities of the programming language resh. A clearly defined Grammar is the basis for syntactic analysis as future step in the project.
+
+Summary
+•	Different Non-Termials are represented in between [].
+•	Different Terminals, User defined Expressions, and can be replaced 
+•	User given names (i. E. Variable Names, Function Names) are represented with an “X”, “Y”, “Z”, etc.
+
+
+Non – Terminals: 
+[Math Symbols | MS]
+“+”, “-“, “*”, “/”, “\”, “!” ,“%”, “**”
+
+[Logic Symbols | LS]
+“=”, “!=”, “>=”, “<=”
+
+[General Symbols | GS]
+“;”, “?”, “(“, “)”, “{“, “}”;”, “:=”, “,”
+
+[Type]
+“int”, “double”, “bool”, “null”, “string”, “complex”, “matrix”
+
+[Keyword]
+“for”, “if”, “elif”, “else”, “while”, “return”, “stop”, “continue”, “or”, “if”, “is” “not”
+
+[Name]
+Any possible Text without Special Characters 
+
+[Value]
+Can be any given input (Dependent on the Type)
+
+[Code]
+Any specific resh Code
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Production Rules
+
+Basic:
+[Variable Definition]
+[Name] [GS “:=”] [Value] [GS “;”]
+
+[Variable Definition Type]
+[Type] [Name] [GS “:=”] [Value] [GS “;”]
+
+[Clause]
+[Name] [LS] [Value] [GS “;”]
+
+
+Math:
+[Simple]
+[MS] [Value] 
+
+[Expression]
+[Name] [Simple] […] [;]
+
+
+Loops:
+[Query]
+[Clause] [Keyword “or” | “and”] […]  [{] [}]
+
+[If Query]
+[Keyword “If”] [Query] 
+
+[If elif Else]
+[If Query] [“Keyword” elif] [Query] [Keyword “else”] [{] [}]  
+
+
+[For Loop]
+[Keyword “for”] [Variable Definition] [Clause] [Simple] [{] [}]
+
+[For Each Loop]
+[Keyword “for”] [Name] [{] [}]
+
+[While Loop]
+[LK “while”] [Clause] [{] [}]
+
+
+Lamda:
+[Parameter List]
+[(] [Name] [GS “,”] […] [Name] [)]
+
+[Normal Lamda]
+[Keyword “unnamed”] [Parameter List] [{] [}]
+
+[Pure Lamda]
+[Keyword “unnamed”] [Parameter List] [{] [“return”] [Value] [}]
+
+
+
+
+
+
+
+
+
+
+
+Methods:
+
+[Function With Parameters]
+[Keyword “f” | “func”] [Parameter List] [{] [}]
+
+[Call with parameters]
+[Name] [Parameter List] [GS “;”]
+
+[Function Without Parameters]
+[Keyword “f” | “func”] [{] [}]
+
+[Call without parameters]
+[Name] [GS “;”]
+
+
+Error Handling:
+[Single Line]
+[Code] [GS “?”] [Function with Parameters]
+
+[Many Line]
+[{] [Code] [}] [GS “?”] [Function with Parameters]
+
+
+Classes:
+
+[Class Definition]
+[Keyword “class”] [Name] [Parameter List] [{] [}]
+
+[Add Constructor]
+[Name] [Parameter List] [{] [}]
+
+Example:
+
+f main {
+	num1 := 1
+	num2 :=28
+	sign := “+”
+
+	Calculate(num1, num2, sign);
+}	
+
+f Calculate(num1, num2, sign) {
+	if sign = “+” { return num1 + num2; }
+elif sign = “-” { return num1 - num2; }
+elif sign = “*” { return num1 * num2; }
+elif sign = “/” { return num1 / num2; }
+else { return 0; }
+}
