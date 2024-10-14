@@ -8,9 +8,13 @@ namespace LUC
 {
     internal class SyntaxAnalysis
     {
+        List<string> tokencombinations = new List<string>();
+
         public void Analyse()
         {
             
         }
+
+
     }
 }
