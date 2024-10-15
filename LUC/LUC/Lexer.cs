@@ -108,7 +108,7 @@ namespace LUC
                 case '"':
 
                     string strterm = CreateIdentifier(curchara => restline[curchara].Equals('"')) + '"';
-                    AddToken("(literal, " + strterm + ")", strterm.Length + 1, linetokens);
+                    AddToken("(literal, " + strterm + ")", strterm.Length, linetokens);
 
                     break;
 
