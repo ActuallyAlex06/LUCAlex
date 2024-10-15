@@ -13,7 +13,7 @@ namespace LUC
     {
         public static Dictionary<int, List<string>> tokens = new Dictionary<int, List<string>>();
         string restline = String.Empty;
-        List<string> keywordseperators = new List<string> { " ", "+", "-", "*", "/", "(", ")", "{", "}", '"'.ToString(), "=", ";", ",", "%", "^", "?"};
+        List<string> keywordseperators = new List<string> { " ", "+", "-", "*", "/", "(", ")", "{", "}", '"'.ToString(), "=", ";", ",", "%", "^", "?", ":", ">", "<"};
 
         public void DoLexer()
         {
@@ -39,18 +39,20 @@ namespace LUC
                 List<string> linetokens = new List<string>();
                 restline = line.TrimStart();
 
-                while (restline.Length > 0)
+                if (!line.Equals("") && !line.StartsWith("#"))
                 {
-                    DefineTokens(linetokens);
-                    Console.WriteLine(restline);
-                }
+                    while (restline.Length > 0)
+                    {
+                        DefineTokens(linetokens);
+                        Console.WriteLine(restline);
+                    }
 
-                tokens.Add(linenum, linetokens);
-                linenum++;
+                    tokens.Add(linenum, linetokens);
+                    linenum++;
+                }
             }
         }
         
-        //Fix Bugs with numbers or identifiers at end of line
         private void DefineTokens(List<string> linetokens)
         {        
             switch (restline[0])
