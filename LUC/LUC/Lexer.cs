@@ -60,21 +60,22 @@ namespace LUC
                 case '-':
                 case '*':
                 case '/':
-                case '+':
-                case '=':
+                case '+':          
                 case '%':
                 case '^':
                 case '\\':
                 case '?':
                 case ',':
-                case '>':
-                case '<':
+
 
                     AddToken("(operator, " + restline[0] + ")", 1, linetokens);
 
                 break;
 
-                case ':': AddToken("(operator, :=)", 2, linetokens); break;
+                case '>': CheckNext('=', linetokens); break;
+                case '<': CheckNext('=', linetokens); break;
+                case '=': CheckNext('=', linetokens); break;
+                case ':': CheckNext('=', linetokens); break;
                 #endregion
 
                 #region Numbers
@@ -138,6 +139,14 @@ namespace LUC
 
                     break;
             }
+        }
+
+        private void CheckNext(char nextchar, List<string> linetokens)
+        {
+            if (nextchar.Equals(restline[1]))
+            {
+                AddToken("(operator, " + restline[0] + "" + restline[1] + ")", 2, linetokens);
+            } else { AddToken("(operator, " + restline[0] + ")", 1, linetokens); }
         }
 
         private string CreateIdentifier(Func<int, bool> condition)
