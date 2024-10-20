@@ -20,14 +20,6 @@ namespace LUC
             string inputcode = Recources.ReadFile("Applications/Code.luc");
             Tokenizer(inputcode.Split(new string[] { Environment.NewLine }, StringSplitOptions.None).ToList()); ;
 
-            foreach(List<string> tokena in tokens.Values)
-            {
-                foreach(string tokenb in tokena)
-                {
-                    Console.Write(tokenb + " ");
-                }
-                Console.WriteLine("");
-            }
         }
 
         private void Tokenizer(List<string> lines)

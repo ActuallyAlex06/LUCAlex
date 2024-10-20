@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LUC
 {
-    internal class SyntaxAnalysis
+    public class SyntaxAnalysis
     {
         List<string> tokencombinations = new List<string>();
 
@@ -14,7 +14,5 @@ namespace LUC
         {
             
         }
-
-
     }
 }
