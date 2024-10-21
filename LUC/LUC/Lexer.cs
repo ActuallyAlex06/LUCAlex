@@ -20,6 +20,15 @@ namespace LUC
             string inputcode = Recources.ReadFile("Applications/Code.luc");
             Tokenizer(inputcode.Split(new string[] { Environment.NewLine }, StringSplitOptions.None).ToList()); ;
 
+            foreach(List<string> token in tokens.Values)
+            {
+                foreach(string tok in token)
+                {
+                    Console.Write(tok + " | ");
+                }
+                Console.WriteLine();
+            }
+
         }
 
         private void Tokenizer(List<string> lines)
@@ -62,7 +71,7 @@ namespace LUC
                 case ',':
 
 
-                    AddToken("(operator, " + restline[0] + ")", 1, linetokens);
+                    AddToken("o, " + restline[0], 1, linetokens);
 
                 break;
 
@@ -85,7 +94,7 @@ namespace LUC
                 case '9':
 
                     string finalnum = CreateIdentifier(curchara => !int.TryParse(restline[curchara].ToString(), out int a));
-                    AddToken("(literal, " + finalnum + ")", finalnum.Length, linetokens);
+                    AddToken("l, " + finalnum, finalnum.Length, linetokens);
 
                 break;
                 #endregion
@@ -96,13 +105,13 @@ namespace LUC
                 case '(': 
                 case ')': 
                 case '{': 
-                case '}': AddToken("(seperator, " + restline[0] + ")", 1, linetokens); break;
+                case '}': AddToken("s, " + restline[0], 1, linetokens); break;
                 #endregion
 
                 case '"':
 
                     string strterm = CreateIdentifier(curchara => restline[curchara].Equals('"')) + '"';
-                    AddToken("(literal, " + strterm + ")", strterm.Length, linetokens);
+                    AddToken("l, " + strterm, strterm.Length, linetokens);
 
                     break;
 
@@ -129,7 +138,7 @@ namespace LUC
                 default:
 
                     string word = CreateIdentifier(curchara => keywordseperators.Contains(restline[curchara].ToString()));
-                    AddToken("(identifier, " + word + ")", word.Length, linetokens);
+                    AddToken("i, " + word, word.Length, linetokens);
 
                     break;
             }
@@ -139,8 +148,8 @@ namespace LUC
         {
             if (nextchar.Equals(restline[1]))
             {
-                AddToken("(operator, " + restline[0] + "" + restline[1] + ")", 2, linetokens);
-            } else { AddToken("(operator, " + restline[0] + ")", 1, linetokens); }
+                AddToken("o, " + restline[0] + "" + restline[1], 2, linetokens);
+            } else { AddToken("o, " + restline[0], 1, linetokens); }
         }
 
         private string CreateIdentifier(Func<int, bool> condition)
@@ -166,14 +175,14 @@ namespace LUC
             {
                 if (term.Equals(word))
                 {
-                    AddToken("(keyword, " + word + ")", word.Length, linetokens);
+                    AddToken("k, " + word, word.Length, linetokens);
                     iskeyword = false;
                 }
             }
 
             if(iskeyword)
             {
-                AddToken("(identifier, " + word + ")", word.Length, linetokens);
+                AddToken("i, " + word, word.Length, linetokens);
             }
         }
 
