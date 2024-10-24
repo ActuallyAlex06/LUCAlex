@@ -48,9 +48,10 @@ namespace LUC
                         Console.WriteLine(restline);
                     }
 
-                    tokens.Add(linenum, linetokens);
-                    linenum++;
+                    tokens.Add(linenum, linetokens);                 
                 }
+
+                linenum++;
             }
         }
         

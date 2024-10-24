@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,22 +9,12 @@ namespace LUC
 {
     public class SyntaxAnalysis
     {
-        Dictionary<int, List<string>> rules = new Dictionary<int, List<string>> { };
-
         public void Analyse()
         {
-            AddRules();
-            AnalyseTokens();
-        }
+            Dictionary<int, List<string>> tokens = Lexer.tokens;
+            //CheckBasicProperties();
 
-        private void AddRules()
-        {
-            rules[0] = [
-                
-                "k|i|o, =|l|s, ;",
-                "i|o, :=|l|s, ;",
-
-                ];
+            ApplyTokensToRules(tokens);
         }
 
         //Plan is to add a generalized Method to check for any rule given to it if a sequence of tokens applys to it
@@ -35,9 +26,45 @@ namespace LUC
          * 
          */
 
-        private void AnalyseTokens()
+        private void ApplyTokensToRules(Dictionary<int, List<string>> tokens)
         {
+            foreach (List<string> line in tokens.Values)
+            {
+                for (int i = 0; i < line.Count; i++)
+                {
+                    string token = line[i];
 
+                    if (line[i].First().Equals('i') || line[i].First().Equals('l'))
+                    {
+                        token = line[i].First().ToString();
+                    }
+
+                    CheckIfRuleApplys(token, line);
+                }
+            }
+        }
+
+        private void CheckIfRuleApplys(string token, List<string> line)
+        {
+            switch(token)
+            {
+                case "i":
+
+                    CheckNextTokens([["o, :=", "l", "s, ;"]], line);
+
+                    break;
+            }
+        }
+
+        private void CheckNextTokens(List<List<string>> lst, List<string> line)
+        {
+            foreach(List<string> rules in lst)
+            {
+                foreach(string rule in rules)
+                {
+                    if(rule)
+                }
+            }
         }
     }
 }
