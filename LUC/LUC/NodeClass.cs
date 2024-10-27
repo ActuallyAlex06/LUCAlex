@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,28 +7,33 @@ using System.Threading.Tasks;
 
 namespace LUC
 {
-    class TokenClass
+    public class TreeNode<T> : IEnumerable<TreeNode<T>>
     {
-        public string token; 
-        public TokenClass parenttoken { get; set; }
-        public List<TokenClass> childtoken { get; set; }
+        public T Data { get; set; }
+        public TreeNode<T> Parent { get; set; }
+        public ICollection<TreeNode<T>> Children { get; set; }
 
-        public TokenClass(string token)
+        public TreeNode(T data)
         {
-            this.token = token;
-            this.childtoken = new List<TokenClass>();
+            this.Data = data;
+            this.Children = new LinkedList<TreeNode<T>>();
         }
 
-        public TokenClass AddChild(string child)
+        public TreeNode<T> AddChild(T child)
         {
-            TokenClass tokenchild = new TokenClass(child)
-            {
-                parenttoken = this 
-            };
-
-            this.childtoken.Add(tokenchild);
-            return tokenchild;
+            TreeNode<T> childNode = new TreeNode<T>(child) { Parent = this };
+            this.Children.Add(childNode);
+            return childNode;
         }
 
+        public IEnumerator<TreeNode<T>> GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
