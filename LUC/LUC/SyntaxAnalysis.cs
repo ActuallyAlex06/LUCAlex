@@ -9,9 +9,6 @@ namespace LUC
 {
     public class SyntaxAnalysis
     {
-
-        TreeNode<string> node0 = new TreeNode<string>("root0");
-
         public void Analyse()
         {
             Dictionary<int, List<string>> tokens = Lexer.tokens;
@@ -28,6 +25,8 @@ namespace LUC
          */
 
         List<string> stack = new List<string>();
+        Dictionary<int, TreeNode<string>> trees = new Dictionary<int, TreeNode<string>> { };
+        int treeid = 0;
 
         private void GoThroughTokens(Dictionary<int, List<string>> tokens)
         {
@@ -47,7 +46,21 @@ namespace LUC
 
             if(token.Equals("s, ;"))
             {
-                CheckIfRuleApplysInStack("VariableDefi");
+                CheckIfRuleApplysInStack("VD");
+            }
+        }
+
+        private void TrySomething(List<string> rules, string token)
+        {
+            bool rulefound = false;
+
+            int stackindex = 0;
+
+            string fullrule = token;
+            while (!rulefound)
+            {
+               fullrule = fullrule +  "|" + stack[stackindex];
+               
             }
         }
 
@@ -55,22 +68,29 @@ namespace LUC
         {
             switch(kind)
             {
-                case "VariableDefi":
+                case "VD":
 
-                    if (stack[0][0].Equals('i') && stack[1].Equals("o, :=") && stack[2][0].Equals('l')) { AddNode([stack[0], stack[1], stack[2]]); }
+                    if (stack[0][0].Equals('i') && stack[1].Equals("o, :=") && stack[2][0].Equals('l')) { 
+                        CreateTree(4, "VD", [stack[0], stack[1], stack[2]]);
+                    }
               
                     break;
             }
         }
 
-        private void AddNode(List<string> nodes)
-        {
+        private void CreateTree(int delete, string name, List<string> nodes)
+        { 
+            TreeNode<string> root = new TreeNode<string>(name);  
+            
             foreach(string node in nodes)
             {
-                
+                root.AddChild(node);
             }
-        }
 
+            trees.Add(treeid, root);
+            treeid++;
+            stack.RemoveRange(0, delete);
+        }
 
         //numba := 12;
     }
