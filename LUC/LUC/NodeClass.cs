@@ -7,33 +7,42 @@ using System.Threading.Tasks;
 
 namespace LUC
 {
-    public class TreeNode<T> : IEnumerable<TreeNode<T>>
+    delegate void TreeVisitor<String>(string nodeData);
+
+    class TreeNode<String>
     {
-        public T Data { get; set; }
-        public TreeNode<T> Parent { get; set; }
-        public ICollection<TreeNode<T>> Children { get; set; }
+        private string data;
+        private LinkedList<TreeNode<string>> children;
 
-        public TreeNode(T data)
+        public TreeNode(string data)
         {
-            this.Data = data;
-            this.Children = new LinkedList<TreeNode<T>>();
+            this.data = data;
+            children = new LinkedList<TreeNode<string>>();
         }
 
-        public TreeNode<T> AddChild(T child)
+        public void AddChild(string data)
         {
-            TreeNode<T> childNode = new TreeNode<T>(child) { Parent = this };
-            this.Children.Add(childNode);
-            return childNode;
+            children.AddFirst(new TreeNode<string>(data));
         }
 
-        public IEnumerator<TreeNode<T>> GetEnumerator()
+        public TreeNode<string> GetChild(int i)
         {
-            throw new NotImplementedException();
+            foreach (TreeNode<string> n in children)
+                if (--i == 0)
+                    return n;
+            return null;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public void Traverse(TreeNode<string> node, TreeVisitor<string> visitor)
         {
-            throw new NotImplementedException();
+            visitor(node.data);
+            foreach (TreeNode<string> kid in node.children)
+                Traverse(kid, visitor);
+        }
+
+        public string Data
+        {
+            get { return data; }
         }
     }
 }

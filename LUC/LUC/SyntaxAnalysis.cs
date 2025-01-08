@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
@@ -19,102 +20,101 @@ namespace LUC
 
         List<string> stack = new List<string>();
         Dictionary<int, TreeNode<string>> trees = new Dictionary<int, TreeNode<string>> { };
-        Dictionary<string, Action<string>> rules = new Dictionary<string, Action<string>> { };
         int treeid = 0;
 
         private void GoThroughTokens(Dictionary<int, List<string>> tokens)
         {
-            foreach(List<string> tokensline in tokens.Values) 
+            foreach (List<string> tokensline in tokens.Values)
             {
                 foreach(string token in tokensline)
                 {
                     stack.Add(token);
+                    CheckReduce();
+                    ReadStack();
                 }
             }
-
-            CheckRules();
         }
 
-        private void CheckRules()
+        private void CheckReduce()
         {
-            for (int i  = 0; i < 6; i++)
-            {
-                int index = 0;
+            int currentindex = stack.Count;
+            if (ReadStack(3, currentindex).Equals("l|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("i|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("l|o, +|i|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("i|o, +|i|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
 
-                foreach (string token in stack)
+            else if (ReadStack(3, currentindex).Equals("l|o, -|l|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("i|o, -|l|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("l|o, -|i|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("i|o, -|i|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|i|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("i|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+        }
+
+        private string ReadStack(int lookbehind, int currentindex)
+        {
+            string stackoutput = "";
+
+            try
+            {
+                for (int i = lookbehind; i > 0; i--)
                 {
-                    if (token.Equals("s, ;") && i == 1)
+                    if (stack[currentindex - i][0].Equals('l') || stack[currentindex - i][0].Equals('i'))
                     {
-                        CheckIfApplysToRule(index, i);
+                        stackoutput = stackoutput += stack[currentindex - i][0] + "|";
                     }
-
-                    index++;
+                    else if (stack[currentindex - i][0].Equals('k') || stack[currentindex - i][0].Equals('s') || stack[currentindex - i][0].Equals('o'))
+                    {
+                        stackoutput = stackoutput += stack[currentindex - i] + "|";
+                    }
+                    else
+                    {
+                        stackoutput = stackoutput += stack[currentindex - i].Remove(stack[currentindex - i].Length - 2) + "|";
+                    }
                 }
+
+                return stackoutput;
+            }
+            catch (Exception)
+            {
+                return "Error";
             }
         }
 
-        private void CheckIfApplysToRule(int stackindex, int rulesdecider)
+        private void ReduceNormal(int reduce, int currentindex, string root, List<string> leafs)
         {
-            switch (rulesdecider)
+            stack.RemoveRange(currentindex - reduce, reduce);
+            stack[currentindex - reduce - 1] = root + "|" + treeid;
+
+            TreeNode<string> node = new TreeNode<string>(root + "|" + treeid);
+            foreach(string child in leafs)
             {
-                case 1:
-                    
-                        if (GetTokensToCheck(3, stackindex, "i|o, :=|l|s, ;|")) { }
-                        else if(GetTokensToCheck(4, stackindex, "i|o, :=|l|s, ;|")) { }
-                        
-
-                    break;
-
-                case 2:
-
-                        
-
-                    break;
-            }
-        }
-
-        private bool GetTokensToCheck(int amount, int index, string rule)
-        {
-            if(amount > index) { return false; }
-
-            string checkrule = "";
-
-            for(int i = amount; i >= 0; i--)
-            {              
-                if (stack[index - i][0].Equals('i') || stack[index - i][0].Equals('l'))
-                {
-                    checkrule = checkrule + stack[index - i][0] + "|";
-                }
-                else
-                {
-                    checkrule = checkrule + stack[index - i] + "|";
-                }
+                node.AddChild(child);
             }
 
-            if (checkrule.Equals(rule)) 
-            {
-                return true; 
-            } else 
-            { 
-                return false;
-            }
-        }
-
-        private void CreateTree(int delete, string name, List<string> nodes)
-        { 
-            TreeNode<string> root = new TreeNode<string>(name);  
-            
-            foreach(string node in nodes)
-            {
-                root.AddChild(node);
-            }
-
-            trees.Add(treeid, root);
+            trees.Add(treeid, node);
             treeid++;
-            stack.RemoveRange(0, delete);
-            stack.Add(treeid + " | Variable");
         }
 
-        //numba := 12;
+        private void ReadTree()
+        {
+            foreach(TreeNode<string> node in trees.Values) 
+            {
+                Console.WriteLine(node.GetChild(1).Data);
+                Console.WriteLine(node.GetChild(2).Data);
+            }
+        }
+
+        private void ReadStack()
+        {
+            foreach(string s in stack)
+            {
+                Console.WriteLine(s);
+            }
+        }
     }
 }

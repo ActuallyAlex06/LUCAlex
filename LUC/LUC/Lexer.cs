@@ -45,6 +45,7 @@ namespace LUC
             }
         }
         
+        //-numbers!!!
         private void DefineTokens(List<string> linetokens)
         {        
             switch (restline[0])
@@ -180,7 +181,7 @@ namespace LUC
         private void AddToken(string token, int remove, List<string> tokens)
         {
             tokens.Add(token);
-            restline = restline.Remove(0, remove);
+            restline = restline.Remove(0, remove); 
         }
     }
 }
