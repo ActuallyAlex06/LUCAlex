@@ -7,6 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace LUC
 {
@@ -33,26 +34,72 @@ namespace LUC
                     ReadStack();
                 }
             }
+
+            Console.WriteLine();
+            ReadTree();
         }
 
         private void CheckReduce()
         {
             int currentindex = stack.Count;
+
+            //Simple Expression with two literals
             if (ReadStack(3, currentindex).Equals("l|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("i|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("l|o, +|i|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("i|o, +|i|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-
             else if (ReadStack(3, currentindex).Equals("l|o, -|l|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("i|o, -|l|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("l|o, -|i|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("i|o, -|i|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            if (ReadStack(3, currentindex).Equals("l|o, *|l|")) { ReduceNormal(2, currentindex, "EXP *", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("l|o, /|l|")) { ReduceNormal(2, currentindex, "EXP /", [stack[currentindex - 3], stack[currentindex - 1]]); }
 
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|i|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("i|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|l|")) { Console.WriteLine("ReduceSpecial"); }
+            //Combinign literals and expresions (+)
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            else if (ReadStack(3, currentindex).Equals("EXP -|o, +|l|")) { Console.WriteLine("ReduceSpecial"); }
             else if (ReadStack(3, currentindex).Equals("l|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, +|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+            
+            //Combinign literals and expressions (-)
+            else if (ReadStack(3, currentindex).Equals("l|o, -|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, -|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, -|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP -|o, -|l|")) { Console.WriteLine("ReduceSpecial"); }
+
+            //Combinign literals and expressions (*)     
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, *|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP -|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP -|o, *|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP *|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP *|o, *|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP /|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP /|o, *|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
+
+            //Combinign literals and expressions (/)
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP +|o, /|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP -|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP -|o, /|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP *|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP *|o, /|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
+
+            else if (ReadStack(3, currentindex).Equals("EXP /|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("EXP /|o, /|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
+            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
+
+            //Completing Expressions (End of Expression)
+            else if (ReadStack(2, currentindex).Equals("EXP -|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
+            else if (ReadStack(2, currentindex).Equals("EXP *|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
+            else if (ReadStack(2, currentindex).Equals("EXP /|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
+            else if (ReadStack(2, currentindex).Equals("EXP +|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
         }
 
         private string ReadStack(int lookbehind, int currentindex)
@@ -93,7 +140,15 @@ namespace LUC
             TreeNode<string> node = new TreeNode<string>(root + "|" + treeid);
             foreach(string child in leafs)
             {
-                node.AddChild(child);
+                if (child[0].Equals('l') || child[0].Equals('s') || child[0].Equals('o') || child[0].Equals('i') || child[0].Equals('k'))
+                {
+                    node.AddChild(child);
+                } else
+                {
+                    TreeNode<string> treenode = trees[int.Parse(child[child.Count() - 1].ToString())];
+                    node.AddChild(treenode);
+                    //trees.Remove(int.Parse(child[child.Count() - 1].ToString()));
+                }
             }
 
             trees.Add(treeid, node);
@@ -102,10 +157,12 @@ namespace LUC
 
         private void ReadTree()
         {
-            foreach(TreeNode<string> node in trees.Values) 
+            foreach(TreeNode<string> a in trees.Values)
             {
-                Console.WriteLine(node.GetChild(1).Data);
-                Console.WriteLine(node.GetChild(2).Data);
+                foreach (TreeNode<string> b in a.GetAllChild())
+                {
+                    Console.WriteLine(b.Data);
+                }
             }
         }
 

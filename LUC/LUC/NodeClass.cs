@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,12 +26,29 @@ namespace LUC
             children.AddFirst(new TreeNode<string>(data));
         }
 
+        public void AddChild(TreeNode<string> tree)
+        {
+            children.AddFirst(tree);
+        }
+
         public TreeNode<string> GetChild(int i)
         {
             foreach (TreeNode<string> n in children)
                 if (--i == 0)
                     return n;
             return null;
+        }
+
+        public List<TreeNode<string>> GetAllChild()
+        {
+            List<TreeNode<string>> alltrees = new List<TreeNode<string>> { };
+
+            foreach (TreeNode<string> n in children)
+            {
+                alltrees.Add(n);
+            }
+
+            return alltrees;
         }
 
         public void Traverse(TreeNode<string> node, TreeVisitor<string> visitor)
