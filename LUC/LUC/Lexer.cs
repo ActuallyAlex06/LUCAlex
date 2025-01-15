@@ -19,6 +19,16 @@ namespace LUC
         {
             string inputcode = Recources.ReadFile("Applications/Code.luc");
             Tokenizer(inputcode.Split(new string[] { Environment.NewLine }, StringSplitOptions.None).ToList()); ;
+
+            foreach (List<string> tokensline in tokens.Values)
+            {
+                foreach (string token in tokensline)
+                {
+                    Console.WriteLine(token);
+                }
+            }
+
+            Console.WriteLine();
         }
 
         private void Tokenizer(List<string> lines)
@@ -52,7 +62,7 @@ namespace LUC
             {
                 #region MathOperators
                 case ' ': restline = restline.Remove(0, 1); break;
-                case '-':
+                case '-': SpecialCases(CheckNext(' '), '-', linetokens); break;
                 case '*':
                 case '/':
                 case '+':          
@@ -60,17 +70,15 @@ namespace LUC
                 case '^':
                 case '\\':
                 case '?':
-                case ',':
-
 
                     AddToken("o, " + restline[0], 1, linetokens);
 
                 break;
 
-                case '>': CheckNext('=', linetokens); break;
-                case '<': CheckNext('=', linetokens); break;
-                case '=': CheckNext('=', linetokens); break;
-                case ':': CheckNext('=', linetokens); break;
+                case '>': SpecialCases(CheckNext('='), '=', linetokens); break;
+                case '<': SpecialCases(CheckNext('='), '=', linetokens); break;
+                case '=': SpecialCases(CheckNext('='), '=', linetokens); break;
+                case ':': SpecialCases(CheckNext('='), '=', linetokens); break;
                 #endregion
 
                 #region Numbers
@@ -85,7 +93,7 @@ namespace LUC
                 case '8':
                 case '9':
 
-                    string finalnum = CreateIdentifier(curchara => !int.TryParse(restline[curchara].ToString(), out int a));
+                    string finalnum = CreateIdentifier(curchara => !double.TryParse(restline[curchara].ToString(), out double a) && !restline[curchara].Equals('.')) ;
                     AddToken("l, " + finalnum, finalnum.Length, linetokens);
 
                 break;
@@ -93,10 +101,12 @@ namespace LUC
 
                 #region Seperators
 
-                case ';': 
+
                 case '(': 
-                case ')': 
-                case '{': 
+                case ')':  
+                case ';':
+                case '{':
+                case ',':
                 case '}': AddToken("s, " + restline[0], 1, linetokens); break;
                 #endregion
 
@@ -136,12 +146,37 @@ namespace LUC
             }
         }
 
-        private void CheckNext(char nextchar, List<string> linetokens)
+        private bool CheckNext(char nextchar)
         {
             if (nextchar.Equals(restline[1]))
             {
-                AddToken("o, " + restline[0] + "" + restline[1], 2, linetokens);
-            } else { AddToken("o, " + restline[0], 1, linetokens); }
+                return true;
+            } else 
+            {               
+                return false;
+            }
+        }
+
+        private void SpecialCases(bool nextchar, char caseop, List<string> linetokens)
+        {
+            if(caseop.Equals('='))
+            {
+                if (nextchar)
+                {
+                    AddToken("o, " + restline[0] + "" + restline[1], 2, linetokens);
+                } else { AddToken("o, " + restline[0], 1, linetokens); }
+
+            } else if(caseop.Equals('-'))
+            {
+                if(nextchar)
+                {
+                    AddToken("o, " + restline[0], 1, linetokens);
+                } else 
+                {
+                    string num = CreateIdentifier(curchara => !int.TryParse(restline[curchara].ToString(), out int a));
+                    AddToken("l, " + num, num.Length + 1, linetokens);
+                }
+            }
         }
 
         private string CreateIdentifier(Func<int, bool> condition)

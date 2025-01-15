@@ -42,7 +42,7 @@ namespace LUC
 
         private void ShuntingYardAlgorithm(string token)
         {
-            if (token[0].Equals('l') || token[0].Equals('i') || token[0].Equals('k') || token.Equals("s, {") ||token.Equals("s, }"))
+            if (token[0].Equals('l') || token[0].Equals('i') || token[0].Equals('k') || token.Equals("s, {") ||token.Equals("s, }") || token.Equals("s, ,"))
             {
                 stack.Add(token);
 
@@ -70,6 +70,7 @@ namespace LUC
             }
             else if (token[0].Equals('s') && token[token.Length - 1].Equals('('))
             {
+                stack.Add(token);
                 operators.Push(token);
 
             }
@@ -81,6 +82,7 @@ namespace LUC
                     }
 
                 operators.Pop();
+                stack.Add(token);
             }
         }
 
