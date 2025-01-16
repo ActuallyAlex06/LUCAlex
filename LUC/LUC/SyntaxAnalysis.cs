@@ -23,18 +23,22 @@ namespace LUC
         List<string> stack = new List<string>();
         Stack<string> operators = new Stack<string> { };
         Dictionary<int, TreeNode<string>> trees = new Dictionary<int, TreeNode<string>> { };
+        Dictionary<string, Delegate> rules = new Dictionary<string, Delegate>();
         int treeid = 0;
 
         private void GoThroughTokens(Dictionary<int, List<string>> tokens)
         {
+            AddRules();
+
             foreach (List<string> tokensline in tokens.Values)
             {
-                foreach(string token in tokensline)
+                foreach (string token in tokensline)
                 {
                     ShuntingYardAlgorithm(token);
-                    //CheckReduce();
+                    //CanReduce();
                 }
             }
+
             ReadStack();
             //Console.WriteLine();
             //ReadTree();
@@ -42,11 +46,12 @@ namespace LUC
 
         private void ShuntingYardAlgorithm(string token)
         {
-            if (token[0].Equals('l') || token[0].Equals('i') || token[0].Equals('k') || token.Equals("s, {") ||token.Equals("s, }") || token.Equals("s, ,"))
+            if (token[0].Equals('l') || token[0].Equals('i') || token[0].Equals('k') || token.Equals("s, {") || token.Equals("s, }") || token.Equals("s, ,"))
             {
                 stack.Add(token);
 
-            } else if(token.Equals("s, ;"))
+            }
+            else if (token.Equals("s, ;"))
             {
                 int i = 0;
                 while (operators.Any())
@@ -54,10 +59,10 @@ namespace LUC
                     stack.Add(operators.Pop());
                     i++;
                 }
-            }    
+            }
             else if (token[0].Equals('o'))
-            {               
-                if(operators.Any())
+            {
+                if (operators.Any())
                 {
                     while (NotParanthesis(operators.Peek()) && (GetPresenence(operators.Peek()) > GetPresenence(token) || GetPresenence(token) == GetPresenence(operators.Peek())) && GetPresenence(token) != 3)
                     {
@@ -77,9 +82,9 @@ namespace LUC
             else if (token[0].Equals('s') && token[token.Length - 1].Equals(')'))
             {
                 while (operators.Peek() != "s, (")
-                    {
-                        stack.Add(operators.Pop());
-                    }
+                {
+                    stack.Add(operators.Pop());
+                }
 
                 operators.Pop();
                 stack.Add(token);
@@ -91,79 +96,68 @@ namespace LUC
             if (token.Equals("s, (") || token.Equals("s, )"))
             {
                 return false;
-            } else { return true; }
+            }
+            else { return true; }
         }
 
         private int GetPresenence(string token)
         {
-            if(token.Equals("o, +") || token.Equals("o, -")) { return 1; }
-            else if(token.Equals("o, *") || token.Equals("o, /")) { return 2; }
-            else if(token.Equals("o, ^")) { return 3; }
+            if (token.Equals("o, +") || token.Equals("o, -")) { return 1; }
+            else if (token.Equals("o, *") || token.Equals("o, /")) { return 2; }
+            else if (token.Equals("o, ^")) { return 3; }
             else { return 0; }
         }
 
-
-        private void CheckReduce()
+        private void CanReduce()
         {
             int currentindex = stack.Count;
 
-            //Simple Expression with two literals
-            if (ReadStack(3, currentindex).Equals("l|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("l|o, -|l|")) { ReduceNormal(2, currentindex, "EXP -", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("l|o, *|l|")) { ReduceNormal(2, currentindex, "EXP *", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("l|o, /|l|")) { ReduceNormal(2, currentindex, "EXP /", [stack[currentindex - 3], stack[currentindex - 1]]); }
+            if (currentindex < 2) { return; }
+            rules[ReadStack(2, currentindex)].DynamicInvoke(1);
+            rules[ReadStack(3, currentindex)].DynamicInvoke(2, currentindex, "EXP " + stack[currentindex - 1][3], new List<string> { stack[currentindex - 3], stack[currentindex - 2] });
+        }
 
-            //Combinign literals and expresions (+)
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("EXP -|o, +|l|")) { ReduceNormal(2, currentindex, "EXP +", [stack[currentindex - 3], stack[currentindex - 1]]); }
-            else if (ReadStack(3, currentindex).Equals("l|o, +|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, +|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
-            
-            //Combinign literals and expressions (-)
-            else if (ReadStack(3, currentindex).Equals("l|o, -|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, -|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, -|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP -|o, -|l|")) { Console.WriteLine("ReduceSpecial"); }
 
-            //Combinign literals and expressions (*)     
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, *|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+        private void AddRules()
+        {
+            #region Expressions
+            rules["l|l|o, +|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["l|l|o, -|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["l|l|o, *|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["l|l|o, /|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["l|l|o, ^|"] = new Action<int, int, string, List<string>>(ReduceNormal);
 
-            else if (ReadStack(3, currentindex).Equals("EXP -|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP -|o, *|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+            rules["EXP +|l|o, +|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP -|l|o, +|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP *|l|o, +|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP /|l|o, +|"] = new Action<int, int, string, List<string>>(ReduceNormal);
 
-            else if (ReadStack(3, currentindex).Equals("EXP *|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP *|o, *|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
+            rules["EXP +|l|o, -|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP -|l|o, -|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP *|l|o, -|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP /|l|o, -|"] = new Action<int, int, string, List<string>>(ReduceNormal);
 
-            else if (ReadStack(3, currentindex).Equals("EXP /|o, *|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP /|o, *|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, *|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
+            rules["EXP +|l|o, *|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP -|l|o, *|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP *|l|o, *|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP /|l|o, *|"] = new Action<int, int, string, List<string>>(ReduceNormal);
 
-            //Combinign literals and expressions (/)
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP +|o, /|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP +|")) { Console.WriteLine("ReduceSpecial"); }
+            rules["EXP +|l|o, /|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP -|l|o, /|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP *|l|o, /|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP /|l|o, /|"] = new Action<int, int, string, List<string>>(ReduceNormal);
 
-            else if (ReadStack(3, currentindex).Equals("EXP -|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP -|o, /|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP -|")) { Console.WriteLine("ReduceSpecial"); }
+            rules["EXP +|l|o, ^|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP -|l|o, ^|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP *|l|o, ^|"] = new Action<int, int, string, List<string>>(ReduceNormal);
+            rules["EXP /|l|o, ^|"] = new Action<int, int, string, List<string>>(ReduceNormal);
 
-            else if (ReadStack(3, currentindex).Equals("EXP *|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP *|o, /|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP *|")) { Console.WriteLine("ReduceSpecial"); }
-
-            else if (ReadStack(3, currentindex).Equals("EXP /|o, /|l|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("EXP /|o, /|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
-            else if (ReadStack(3, currentindex).Equals("l|o, /|EXP /|")) { Console.WriteLine("ReduceSpecial"); }
-
-            //Completing Expressions (End of Expression)
-            else if (ReadStack(2, currentindex).Equals("EXP -|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
-            else if (ReadStack(2, currentindex).Equals("EXP *|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
-            else if (ReadStack(2, currentindex).Equals("EXP /|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
-            else if (ReadStack(2, currentindex).Equals("EXP +|s, ;|")) { stack.RemoveAt(stack.Count - 1); }
+            rules["EXP /|s, ;|"] = new Action<int>(RemoveFromStack);
+            rules["EXP *|s, ;|"] = new Action<int>(RemoveFromStack);
+            rules["EXP +|s, ;|"] = new Action<int>(RemoveFromStack);
+            rules["EXP -|s, ;|"] = new Action<int>(RemoveFromStack);
+            rules["EXP ^|s, ;|"] = new Action<int>(RemoveFromStack); 
+            #endregion
         }
 
         private string ReadStack(int lookbehind, int currentindex)
@@ -202,12 +196,13 @@ namespace LUC
             stack[currentindex - reduce - 1] = root + "|" + treeid;
 
             TreeNode<string> node = new TreeNode<string>(root + "|" + treeid);
-            foreach(string child in leafs)
+            foreach (string child in leafs)
             {
                 if (child[0].Equals('l') || child[0].Equals('s') || child[0].Equals('o') || child[0].Equals('i') || child[0].Equals('k'))
                 {
                     node.AddChild(child);
-                } else
+                }
+                else
                 {
                     TreeNode<string> treenode = trees[int.Parse(child[child.Count() - 1].ToString())];
                     node.AddChild(treenode);
@@ -219,9 +214,14 @@ namespace LUC
             treeid++;
         }
 
+        private void RemoveFromStack(int amount)
+        {
+            stack.RemoveRange(stack.Count() - amount, amount);
+        }
+
         private void ReadTree()
         {
-            foreach(TreeNode<string> a in trees.Values)
+            foreach (TreeNode<string> a in trees.Values)
             {
                 foreach (TreeNode<string> b in a.GetAllChild())
                 {
@@ -232,7 +232,7 @@ namespace LUC
 
         private void ReadStack()
         {
-            foreach(string s in stack)
+            foreach (string s in stack)
             {
                 Console.WriteLine(s);
             }
