@@ -163,8 +163,8 @@ namespace LUC
             {
                 if (nextchar)
                 {
-                    AddToken("o, " + restline[0] + "" + restline[1], 2, linetokens);
-                } else { AddToken("o, " + restline[0], 1, linetokens); }
+                    AddToken("k, " + restline[0] + "" + restline[1], 2, linetokens);
+                } else { AddToken("k, " + restline[0], 1, linetokens); }
 
             } else if(caseop.Equals('-'))
             {
@@ -173,8 +173,8 @@ namespace LUC
                     AddToken("o, " + restline[0], 1, linetokens);
                 } else 
                 {
-                    string num = CreateIdentifier(curchara => !int.TryParse(restline[curchara].ToString(), out int a));
-                    AddToken("l, " + num, num.Length + 1, linetokens);
+                    string finalnum = CreateIdentifier(curchara => !double.TryParse(restline[curchara].ToString(), out double a) && !restline[curchara].Equals('.'));
+                    AddToken("l, " + finalnum, finalnum.Length, linetokens);
                 }
             }
         }
