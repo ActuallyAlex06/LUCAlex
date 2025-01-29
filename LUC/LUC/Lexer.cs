@@ -27,7 +27,7 @@ namespace LUC
                     Console.WriteLine(token);
                 }
             }
-
+            
             Console.WriteLine();
         }
 
@@ -55,7 +55,6 @@ namespace LUC
             }
         }
         
-        //-numbers!!!
         private void DefineTokens(List<string> linetokens)
         {        
             switch (restline[0])
@@ -94,7 +93,7 @@ namespace LUC
                 case '9':
 
                     string finalnum = CreateIdentifier(curchara => !double.TryParse(restline[curchara].ToString(), out double a) && !restline[curchara].Equals('.')) ;
-                    AddToken("l, " + finalnum, finalnum.Length, linetokens);
+                    AddToken("n, " + finalnum, finalnum.Length, linetokens);
 
                 break;
                 #endregion
@@ -128,7 +127,7 @@ namespace LUC
                 case 'm': CheckForKeyword(["matrix"], linetokens); break;
                 case 'n': CheckForKeyword(["not"], linetokens); break;
                 case 'o': CheckForKeyword(["or"], linetokens); break;
-                case 'p': CheckForKeyword(["purefunc", "pfunc", "pf"], linetokens); break;
+                case 'p': CheckForKeyword(["purefunction", "purefunc", "pfunc", "pf"], linetokens); break;
                 case 'r': CheckForKeyword(["return", "stop"], linetokens); break;
                 case 's': CheckForKeyword(["string", "stop"], linetokens); break;
                 case 't': CheckForKeyword(["true"], linetokens); break;

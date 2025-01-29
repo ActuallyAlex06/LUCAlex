@@ -23,12 +23,12 @@ namespace LUC
 
         public void AddChild(string data)
         {
-            children.AddFirst(new TreeNode<string>(data));
+            children.AddLast(new TreeNode<string>(data));
         }
 
         public void AddChild(TreeNode<string> tree)
         {
-            children.AddFirst(tree);
+            children.AddLast(tree);
         }
 
         public TreeNode<string> GetChild(int i)

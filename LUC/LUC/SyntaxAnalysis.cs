@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Formats.Asn1;
 using System.IO.Pipes;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -22,10 +25,11 @@ namespace LUC
             GoThroughTokens(tokens);
         }
 
-        List<string> stack = new List<string>();
         Stack<string> operators = new Stack<string> { };
-        Dictionary<int, TreeNode<string>> trees = new Dictionary<int, TreeNode<string>> { };
-        int treeid = 0;
+        List<TreeNode<string>> trees = new List<TreeNode<string>>();
+        string lookahead;
+        List<string> lsttokens = new List<string> { };
+        TreeNode<string> start = new TreeNode<string>("Start");
 
         private void GoThroughTokens(Dictionary<int, List<string>> tokens)
         {
@@ -33,29 +37,373 @@ namespace LUC
             {
                 foreach (string token in tokensline)
                 {
-                    ShuntingYardAlgorithm(token);
-                    int currentindex = stack.Count;
-                    CanReduce(currentindex);
-
-                    if(token.Equals("s, ;")) 
+                    ShuntingYardAlgorithm(token, lsttokens);  
+                    
+                    if(token.Equals("s, ;"))
                     {
-                        stack.Add(token);
-                        currentindex = stack.Count;
-                        CleanUpReduce(currentindex);
+                        lsttokens.Add(token);
                     }
                 }
             }
 
-            ReadStack();
-            //Console.WriteLine();
-            //ReadTree();
+            trees.Add(start);
+            lsttokens.Add("$");
+            lookahead = LookAhead(1);
+            StartDescent(start);
+
+            Console.WriteLine();
+            ReadTree();
         }
 
-        private void ShuntingYardAlgorithm(string token)
+        private void StartDescent(TreeNode<string> leaf)
         {
-            if (token[0].Equals('l') || token[0].Equals('i') || token[0].Equals('k') || token.Equals("s, {") || token.Equals("s, }") || token.Equals("s, ,"))
+            Console.WriteLine("LookAhead: " + lookahead);
+
+            switch (lookahead)
             {
-                stack.Add(token);
+                case "k, function":
+                case "k, func":
+                case "k, f":
+
+                    lookahead = "k, function";
+                    SubFuncCreate(leaf, true);
+
+                    break;
+
+                case "k, purefunction":
+                case "k, pfunc":
+                case "k, pf":
+                case "k, purefunc": 
+
+                    lookahead = "k, purefunction";
+                    SubPureFuncCreate(leaf, true);
+
+                    break;
+
+                case "$":
+
+                    Console.WriteLine("Exit");
+
+                    return;
+            }
+        }
+
+        #region Functions
+        private void SubFuncCreate(TreeNode<string> leaf, bool newlayer)
+        {
+            TreeNode<string> node = NewLayerResult(leaf, newlayer, "CREFUNC");
+            Match("k, function", node);
+            Match("i", node);
+            SubParam(node, true);
+        }
+
+        private void SubPureFuncCreate(TreeNode<string> leaf, bool newlayer)
+        {
+            TreeNode<string> node = NewLayerResult(leaf, newlayer, "CREPUREFUNC");
+            Match(lookahead, node);
+
+            switch (lookahead)
+            {
+                case "k, bool":
+                case "k, int":
+                case "k, string":
+                case "k, double":
+
+                    Match(lookahead, node);
+
+                    break;
+
+                default: Console.WriteLine("SyntaxError"); break;
+            }
+
+            Match("i", node);
+            SubParam(node, true);
+        }
+        #endregion
+
+        #region Parameter Logic
+        private void SubParam(TreeNode<string> leaf, bool newlayer)
+        {
+            TreeNode<string> node = NewLayerResult(leaf, newlayer, "PARAM");
+
+            switch (lookahead)
+            {
+                case "s, (":
+
+                    Match("s, (", node);
+                    SubMoreParam(node);
+
+                    break;
+
+                default: Console.WriteLine("Error"); break;
+            }
+        }
+
+        private void SubMoreParam(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "k, int":
+                case "k, bool":
+                case "k, string":
+
+                    Match(lookahead, node);
+
+                    break;
+
+                default: Console.WriteLine("Syntax Error"); break;
+            }
+
+            Match("i", node);
+            SubAdditionalParam(node);
+        }
+
+        private void SubAdditionalParam(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "s, ,":
+
+                    Match("s, ,", node);
+                    SubMoreParam(node);
+
+                    break;
+
+                case "s, )":
+
+                    Match("s, )", node);
+                    SubBody(node, true);
+
+                    break;
+            }
+        } 
+        #endregion
+
+        private void SubBody(TreeNode<string> leaf, bool newlayer)
+        {
+            TreeNode<string> node = NewLayerResult(leaf, newlayer, "BODY");
+
+            switch (lookahead)
+            {
+                case "s, {":
+
+                    Match("s, {", node);
+                    SubBodyMain(node);
+
+                break;
+            }
+        }
+
+        private void SubBodyMain(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "k, while":
+
+                    TreeNode<string> whilenode = NewLayerResult(node, true, "WHILE");
+                    Match("k, while", whilenode);
+                    SubCond(whilenode, true);
+                    SubBody(whilenode, true);
+                    SubBodyMain(node);
+                   
+                return;
+
+                case "k, if":
+
+                    TreeNode<string> ifnode = NewLayerResult(node, true, "IF");
+                    Match("k, if", ifnode);
+                    SubCond(ifnode, true);
+                    SubBody(ifnode, true);
+                    SubBodyMain(node);
+
+                    return;
+
+                case "k, elif":
+
+                    TreeNode<string> elifnode = NewLayerResult(node, true, "ELIF");
+                    Match("k, if", elifnode);
+                    SubCond(elifnode, true);
+                    SubBody(elifnode, true);
+                    SubBodyMain(node);
+
+                    return;
+
+                case "k, else":
+
+                    TreeNode<string> elsenode = NewLayerResult(node, true, "ELSE");
+                    Match("k, if", elsenode);
+                    SubCond(elsenode, true);
+                    SubBody(elsenode, true);
+                    SubBodyMain(node);
+
+                    return;
+
+                case "s, }":
+
+                    Match("s, }", node);
+                    StartDescent(start);
+
+                break;
+            }
+        }
+
+        private void SubCond(TreeNode<string> leaf, bool newlayer)
+        {
+            TreeNode<string> node = NewLayerResult(leaf, newlayer, "CON");
+
+            switch (lookahead)
+            {
+                case "l":
+                    Match(lookahead, node);
+                    SubCondSign(node);
+                    break;
+
+                case "n":
+                    Match(lookahead, node);
+                    SubCondSign(node);
+                    break;
+
+                case "i":
+                    Match(lookahead, node);
+                    SubCondSign(node);
+                    break;
+
+                case "k, true":
+                case "k, false":
+                    Match(lookahead, node);
+                    SubEndCon(node);
+                break;
+
+                default: Console.WriteLine("Big Error");  break;
+            }
+        }
+
+        private void SubCondSign(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "k, ==":
+                case "k, !=":
+                case "k, <=":
+                case "k, >=":
+                case "k, <":
+                case "k, >":
+                case "k, is":
+                case "k, not":
+
+                    Match(lookahead, node);
+                    SubEndCon(node);
+
+                    break;
+
+                default: Console.WriteLine("A Big Error"); break;
+            }
+        }
+
+        private void SubMoreCon(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "k, and":
+                case "k, or":
+
+                    SubCond(node, false);
+
+                break;
+
+                case "s, {":  return;
+
+                default: Console.WriteLine("B Big Error"); break;
+            }
+        }
+
+        private void SubEndCon(TreeNode<string> node)
+        {
+            switch(lookahead)
+            {
+                case "l":
+                    Match(lookahead, node);
+                    SubMoreCon(node);
+                    break;
+
+                case "n":
+                    Match(lookahead, node);
+                    SubMoreCon(node);
+                    break;
+
+                case "i":
+                case "k, true":
+                case "k, false":
+
+                    Match(lookahead, node);
+                    SubMoreCon(node);
+
+                break;
+            }
+        }
+
+        private TreeNode<string> NewLayerResult(TreeNode<string> leaf, bool newlayer, string nonterminal)
+        {
+            TreeNode<string> node;
+
+            if (newlayer)
+            {
+                node = new TreeNode<string>(nonterminal);
+                leaf.AddChild(node);
+                trees.Add(node);
+            }
+            else 
+            { 
+                node = leaf;
+            }
+
+            return node;
+        }
+
+        private void Match(string token, TreeNode<string> leaf)
+        {
+            if (lookahead.Equals(token))
+            {
+                Console.WriteLine("Match");
+
+                TreeNode<string> node = new TreeNode<string>(lsttokens[0]);
+                leaf.AddChild(node);
+
+                lsttokens.RemoveRange(0, 1);
+                lookahead = LookAhead(1);
+            }
+            else 
+            {
+                Console.WriteLine(token);
+                Console.WriteLine(lookahead);
+                Environment.Exit(0);
+            }
+        }
+
+        private string LookAhead(int lookahead)
+        {
+            string output = "";
+
+            for(int i = 0; i < lookahead; i++)
+            {
+                if (lsttokens[i][0].Equals('l') || lsttokens[i][0].Equals('i') || lsttokens[i][0].Equals('n'))
+                {
+                    output += lsttokens[i].First();
+                } 
+                else
+                {
+                    output += lsttokens[i];
+                }
+            }
+
+            return output;
+        }
+
+        private void ShuntingYardAlgorithm(string token, List<string> lsttokens)
+        {
+            if (token[0].Equals('l') || token[0].Equals('i') || token[0].Equals('k') || token.Equals("s, {") || token.Equals("s, }") || token.Equals("s, ,") || token[0].Equals('n'))
+            {
+                lsttokens.Add(token);
 
             }
             else if (token.Equals("s, ;"))
@@ -63,7 +411,7 @@ namespace LUC
                 int i = 0;
                 while (operators.Any())
                 {
-                    stack.Add(operators.Pop());
+                    lsttokens.Add(operators.Pop());
                     i++;
                 }
             }
@@ -73,7 +421,7 @@ namespace LUC
                 {
                     while (NotParanthesis(operators.Peek()) && (GetPresenence(operators.Peek()) > GetPresenence(token) || GetPresenence(token) == GetPresenence(operators.Peek())) && GetPresenence(token) != 3)
                     {
-                        stack.Add(operators.Pop());
+                        lsttokens.Add(operators.Pop());
                         if (!operators.Any()) { break; }
                     }
                 }
@@ -82,7 +430,7 @@ namespace LUC
             }
             else if (token[0].Equals('s') && token[token.Length - 1].Equals('('))
             {
-                stack.Add(token);
+                lsttokens.Add(token);
                 operators.Push(token);
 
             }
@@ -90,11 +438,11 @@ namespace LUC
             {
                 while (operators.Peek() != "s, (")
                 {
-                    stack.Add(operators.Pop());
+                    lsttokens.Add(operators.Pop());
                 }
 
                 operators.Pop();
-                stack.Add(token);
+                lsttokens.Add(token);
             }
         }
 
@@ -115,150 +463,19 @@ namespace LUC
             else { return 0; }
         }
 
-        private void CanReduce(int currentindex)
-        {
-            switch (ReadStack(2, currentindex))
-            {
-                case "k, int|i|":
-                case "k, bool|i|":
-                case "k, string|i|":
-
-                    ReduceNormal(1, currentindex, "NAME " + stack[currentindex - 1].Remove(0, 3) + " " + stack[currentindex - 2].Remove(0, 3), new List<string> { });
-
-                    break;
-
-                default: break;
-            }
-
-            switch(ReadStack(2, currentindex))
-            {
-                case "k, =|i|":
-                case "k, =|l|":
-                case "k, =|TEXP +|":
-                case "k, =|TEXP -|":
-                case "k, =|TEXP *|":
-                case "k, =|TEXP /|":
-                case "k, =|TEXP ^|":
-
-                    ReduceNormal(1, currentindex, "VAL " + stack[currentindex - 1].Remove(0, 3), new List<string> { });
-
-                    break;
-            }
-        }
-
-        private void CleanUpReduce(int currentindex)
-        {
-            //Console.WriteLine("Real " + ReadStack(2, currentindex));
-            switch (ReadStack(2, currentindex))
-            {
-                case "VAL|s, ;|":
-
-
-                    ReduceNormal(1, currentindex, "TVAL " + stack[currentindex - 2].Substring(4, stack[currentindex - 2].Length - 6), new List<string> { });
-                    currentindex--;
-
-                break;
-
-                default: break;
-            }
-
-            switch (ReadStack(2, currentindex))
-            {
-                case "NAME|TVAL|":
-
-                    Console.WriteLine("Reached");
-
-                break;
-            }
-        }
-
-        private string ReadStack(int lookbehind, int currentindex)
-        {
-            try
-            {
-                string stackoutput = "";
-
-                for (int i = lookbehind; i > 0; i--)
-                {
-                    if (stack[currentindex - i][0].Equals('l') || stack[currentindex - i][0].Equals('i'))
-                    {
-                        stackoutput = stackoutput += stack[currentindex - i][0] + "|";
-                    }
-
-                    else if (stack[currentindex - i][0].Equals('k') || stack[currentindex - i][0].Equals('s') || stack[currentindex - i][0].Equals('o'))
-                    {
-                        stackoutput = stackoutput += stack[currentindex - i] + "|";
-                    }
-
-                    else if (stack[currentindex - i][0].Equals('N'))
-                    {
-                        stackoutput = stackoutput += stack[currentindex - i].Remove(4)  + "|";
-                    }
-
-                    else if (stack[currentindex - i][0].Equals('V'))
-                    {
-                        stackoutput = stackoutput += stack[currentindex - i].Remove(3) + "|";
-                    }
-
-                    else if (stack[currentindex - 1][0].Equals('T'))
-                    {
-                        stackoutput = stackoutput += stack[currentindex - i].Remove(4) + "|";
-                    }
-                }
-
-                return stackoutput;
-            }
-            catch (Exception)
-            {
-                return "Error";
-            }
-  
-        }
-
-        private void ReduceNormal(int reduce, int currentindex, string root, List<string> leafs)
-        {
-            stack.RemoveRange(currentindex - reduce, reduce);
-            stack[currentindex - reduce - 1] = root + "|" + treeid;
-
-            TreeNode<string> node = new TreeNode<string>(root + "|" + treeid);
-            foreach (string child in leafs)
-            {
-                if (child[0].Equals('l') || child[0].Equals('s') || child[0].Equals('o') || child[0].Equals('i') || child[0].Equals('k'))
-                {
-                    node.AddChild(child);
-                } 
-                else
-                {
-                    TreeNode<string> treenode = trees[int.Parse(child[child.Count() - 1].ToString())];
-                    node.AddChild(treenode);
-                }
-            }
-
-            trees.Add(treeid, node);
-            treeid++;
-        }
-
-        private void RemoveFromStack(int amount)
-        {
-            stack.RemoveRange(stack.Count() - amount, amount);
-        }
-
+       
         private void ReadTree()
         {
-            foreach (TreeNode<string> a in trees.Values)
+            foreach(TreeNode<string> a in trees)
             {
+                Console.WriteLine("Root:" + a.Data);
+
                 foreach (TreeNode<string> b in a.GetAllChild())
                 {
-                    Console.WriteLine(b.Data);
+                    Console.WriteLine("Leaf:" + b.Data); 
                 }
-            }
-        }
 
-        private void ReadStack()
-        {
-            foreach (string s in stack)
-            {
-                Console.WriteLine(s);
+                Console.WriteLine();
             }
         }
     }
