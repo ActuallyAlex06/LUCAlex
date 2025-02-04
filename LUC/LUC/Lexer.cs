@@ -69,6 +69,7 @@ namespace LUC
                 case '^':
                 case '\\':
                 case '?':
+                case '&':
 
                     AddToken("o, " + restline[0], 1, linetokens);
 
@@ -99,8 +100,6 @@ namespace LUC
                 #endregion
 
                 #region Seperators
-
-
                 case '(': 
                 case ')':  
                 case ';':
@@ -162,8 +161,8 @@ namespace LUC
             {
                 if (nextchar)
                 {
-                    AddToken("k, " + restline[0] + "" + restline[1], 2, linetokens);
-                } else { AddToken("k, " + restline[0], 1, linetokens); }
+                    AddToken("o, " + restline[0] + "" + restline[1], 2, linetokens);
+                } else { AddToken("o, " + restline[0], 1, linetokens); }
 
             } else if(caseop.Equals('-'))
             {
