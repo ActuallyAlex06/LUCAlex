@@ -13,7 +13,7 @@ namespace LUC
     {
         public static Dictionary<int, List<string>> tokens = new Dictionary<int, List<string>>();
         string restline = String.Empty;
-        List<string> keywordseperators = new List<string> { " ", "+", "-", "*", "/", "(", ")", "{", "}", '"'.ToString(), "=", ";", ",", "%", "^", "?", ":", ">", "<"};
+        List<string> keywordseperators = new List<string> { " ", "+", "-", "*", "/", "(", ")", "{", "}", "[", "]", '"'.ToString(), "=", ";", ",", "%", "^", "?", ":", ">", "<"};
 
         public void DoLexer()
         {
@@ -79,6 +79,7 @@ namespace LUC
                 case '<': SpecialCases(CheckNext('='), '=', linetokens); break;
                 case '=': SpecialCases(CheckNext('='), '=', linetokens); break;
                 case ':': SpecialCases(CheckNext('='), '=', linetokens); break;
+                case '!': SpecialCases(CheckNext('='), '=', linetokens); break;
                 #endregion
 
                 #region Numbers
@@ -105,6 +106,8 @@ namespace LUC
                 case ';':
                 case '{':
                 case ',':
+                case '[':
+                case ']':
                 case '}': AddToken("s, " + restline[0], 1, linetokens); break;
                 #endregion
 
@@ -122,12 +125,12 @@ namespace LUC
                 case 'd': CheckForKeyword(["double"], linetokens); break;
                 case 'e': CheckForKeyword(["elif", "else"], linetokens); break;
                 case 'f': CheckForKeyword(["function", "func", "for", "f", "false"], linetokens); break;
-                case 'i': CheckForKeyword(["int", "integer", "if", "is"], linetokens); break;
+                case 'i': CheckForKeyword(["in", "int", "integer", "if", "is"], linetokens); break;
                 case 'm': CheckForKeyword(["matrix"], linetokens); break;
                 case 'n': CheckForKeyword(["not"], linetokens); break;
                 case 'o': CheckForKeyword(["or"], linetokens); break;
                 case 'p': CheckForKeyword(["purefunction", "purefunc", "pfunc", "pf"], linetokens); break;
-                case 'r': CheckForKeyword(["return", "stop"], linetokens); break;
+                case 'r': CheckForKeyword(["r", "return", "stop"], linetokens); break;
                 case 's': CheckForKeyword(["string", "stop"], linetokens); break;
                 case 't': CheckForKeyword(["true"], linetokens); break;
                 case 'w': CheckForKeyword(["while"], linetokens); break;

@@ -205,6 +205,8 @@ namespace LUC
 
                 case "i":
 
+                    SubIdent(node);
+                    SubEndCallParameters(node);
 
                     break;
 
@@ -224,9 +226,6 @@ namespace LUC
                     SubEndCallParameters(node);
 
                     break;
-
-                default: Console.WriteLine("Method Call Error"); break;
-
             }
         }
 
@@ -280,6 +279,12 @@ namespace LUC
 
                     break;
 
+                case "i":
+
+                    SubIdent(node);
+
+                    break;
+
                 default: Console.WriteLine("What"); break;
             }
         }
@@ -318,6 +323,12 @@ namespace LUC
 
                     break;
 
+                case "i":
+
+                    SubIdent(node);
+
+                    break;
+
                 case "s, (":
 
                     SpecialBracketsCheck(node);
@@ -336,6 +347,12 @@ namespace LUC
 
                     Match(lookahead, node);
                     FrontBracketFix(node);
+
+                    break;
+
+                case "i":
+
+                    SubIdent(node);
 
                     break;
 
@@ -370,8 +387,6 @@ namespace LUC
             }
         }
         #endregion
-
-
 
         #region Body
         private void SubBody(TreeNode<string> leaf, bool newlayer)
@@ -415,6 +430,7 @@ namespace LUC
 
                 case "k, elif":
 
+                    Console.WriteLine("AAA");
                     TreeNode<string> elifnode = NewLayerResult(node, true, "ELIF");
                     Match("k, elif", elifnode);
                     SubCond(elifnode, true);
@@ -425,9 +441,9 @@ namespace LUC
 
                 case "k, else":
 
+                    Console.WriteLine("AAA");
                     TreeNode<string> elsenode = NewLayerResult(node, true, "ELSE");
                     Match("k, else", elsenode);
-                    SubCond(elsenode, true);
                     SubBody(elsenode, true);
                     SubBodyMain(node);
 
@@ -435,12 +451,13 @@ namespace LUC
 
                 case "k, for":
 
-
+                    TreeNode<string> fornode = NewLayerResult(node, true, "FOR");
+                    Match("k, for", fornode);
+                    SubFor(fornode);
+                    SubBody(fornode, true);
+                    SubBodyMain(node);
 
                     return;
-
-
-
 
                 case "k, int":
                 case "k, string":
@@ -455,10 +472,28 @@ namespace LUC
 
                 case "i":
 
-                    SubAssign(node);
+                    SubIdentifierKind(node);
                     SubBodyMain(node);
 
                     return;
+
+                case "k, return":
+                case "k, r":
+                    lookahead = "k, return";
+
+                    TreeNode<string> returnnode = NewLayerResult(node, true, "RET");
+                    SubReturn(returnnode);
+                    SubBodyMain(node);
+
+                    break;
+
+                case "o, ?":
+
+                    TreeNode<string> errornode = NewLayerResult(node, true, "ERR");
+                    SubErrorHandling(errornode);
+                    SubBodyMain(node);
+
+                    break;
 
                 case "s, }":
 
@@ -469,6 +504,123 @@ namespace LUC
             }
         }
         #endregion
+
+        private void SubReturn(TreeNode<string> node)
+        {
+            Console.WriteLine("AAA");
+            Match("k, return", node);
+            SubValReal(node);
+            Skip("s, ;");
+        }
+
+        private void SubIdentifierKind(TreeNode<string> leaf)
+        {
+            string next = LookAhead(2);
+            next = next.Remove(0, 1);
+
+            switch(next)
+            {
+                case "o, :=":
+                case "o, =":
+                    
+                    SubAssign(leaf);
+
+                    break;
+
+                case "s, [":
+
+                    SubListDef(leaf);
+
+                    break;
+
+                case "s, (":
+
+                    SubIdent(leaf);
+                    Skip("s, ;");
+
+                    break;
+            }
+        }
+
+        private void SubListElements(TreeNode<string> leaf)
+        {
+            Skip("s, [");
+            TreeNode<string> elnode = NewLayerResult(leaf, true, "ITEM");
+            SubElement(elnode);
+            Skip("s, ]");
+        }
+
+        private void SubElement(TreeNode<string> node)
+        {
+            switch(lookahead)
+            {
+                case "n":
+                case "i":
+                case "l":
+                case "s, (":
+                case "k, true":
+                case "k, false":
+
+                    SubValReal(node);
+                    SubMoreItems(node);
+
+                    break;
+            }
+        }
+
+        private void SubMoreItems(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "s, ]":
+                    break;
+
+                case "s, ,":
+
+                    Skip("s, ,");
+                    SubElement(node);
+
+                    break;
+            }
+        }
+
+        private void SubListDef(TreeNode<string> leaf)
+        {
+            string next = LookAhead(3);
+            next = next.Remove(0, 5);
+
+            switch (next)
+            {
+                case "k, int":
+                case "k, bool":
+                case "k, string":
+
+                    TreeNode<string> listnode = NewLayerResult(leaf, true, "VAR");
+                    Match("i", listnode);
+                    Match("s, [", listnode);
+                    SubListDef(listnode);
+                    Match(lookahead, listnode);
+                    Match("s, ]", listnode);
+                    Skip("o, =");
+                    SubListElements(listnode);
+                    Skip("s, ;");
+
+                    break;
+
+                case "n":
+                case "s, (":
+                case "i":
+
+                    TreeNode<string> assignnode = NewLayerResult(leaf, true, "ASSIGN");
+                    Match("i", assignnode);
+                    Match("s, [", assignnode);
+                    SubValReal(assignnode);
+                    Match("s, ]", assignnode);
+                    SubVal(assignnode);
+
+                    break;
+            }
+        }
 
         #region Conditions
         private void SubCond(TreeNode<string> leaf, bool newlayer)
@@ -499,11 +651,24 @@ namespace LUC
 
                     TreeNode<string> brexpnode = NewLayerResult(node, true, "EXP");
                     SpecialBracketsCheck(brexpnode);
+                    SubCondSign(node);
 
                     break;
 
                 case "i":
 
+                    SubIdent(node);
+
+                    switch (lookahead)
+                    {
+                        case "s, {":
+
+                            SubEndCon(node);
+                            
+                            break;
+
+                        default: SubCondSign(node); break;
+                    }
 
                     break;
 
@@ -537,7 +702,10 @@ namespace LUC
 
                     break;
 
-                default: Console.WriteLine("A Big Error"); break;
+                default:
+                    Console.WriteLine("A Big Error");
+
+                    break;
             }
         }
 
@@ -554,6 +722,7 @@ namespace LUC
                     break;
 
                 case "s, {": return;
+                case "s, ;": return;
 
                 default: Console.WriteLine("B Big Error"); break;
             }
@@ -578,7 +747,7 @@ namespace LUC
                     TreeNode<string> expnode = NewLayerResult(node, true, "EXP");
                     Match(lookahead, expnode);
                     SubExpHandle(expnode);
-                    SubCondSign(node);
+                    SubMoreCon(node);
 
 
                     break;
@@ -593,6 +762,7 @@ namespace LUC
 
                 case "i":
 
+                    SubIdent(node);
 
                     break;
 
@@ -606,6 +776,8 @@ namespace LUC
             }
         }
         #endregion
+
+        #region Assign and VAL
 
         private void SubVal(TreeNode<string> leaf)
         {
@@ -655,6 +827,12 @@ namespace LUC
 
                     break;
 
+                case "i":
+
+                    SubIdent(node);
+                    
+                    break;
+
                 case "k, true":
                 case "k, false":
 
@@ -668,7 +846,6 @@ namespace LUC
         {
             string next = LookAhead(2);
             next = next.Remove(0, 1);
-            Console.WriteLine("A: " + next);
 
             switch (next)
             {
@@ -677,7 +854,7 @@ namespace LUC
                     TreeNode<string> varnode = NewLayerResult(leaf, true, "VAR");
                     Match("i", varnode);
                     Skip("o, :=");
-                    SubValReal(varnode);
+                    SubDecideVar(varnode);
                     Skip("s, ;");
 
                     break;
@@ -698,10 +875,241 @@ namespace LUC
             }
         }
 
+        private void SubDecideVar(TreeNode<string> node)
+        {
+            switch(lookahead)
+            {
+                case "s, [":
+
+                    SubListElements(node);
+
+                    break;
+
+                case "n":
+                case "l":
+                case "i":
+                case "k, true":
+                case "k, false":
+                case "s, (":
+
+                    SubValReal(node);
+
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region ForLoop
+        private void SubFor(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "s, (":
+
+                    Skip("s, (");
+                    SubFor(node);
+
+                    break;
+
+                case "i":
+
+                    SubForEachOrFor(node);
+
+                    break;
+
+                case "k, int":
+
+                    TreeNode<string> varnode = NewLayerResult(node, true, "VAR");
+                    SubName(varnode);
+                    SubForCont(node);
+
+                    break;
+            }
+        }
+
+        private void SubForCont(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "k, in":
+
+                    Match("k, in", node);
+                    Match("i", node);
+                    
+                    break;
+
+                case "o, =":
+
+                    SubVal(node);
+                    SubCond(node, true);
+                    Skip("s, ;");
+                    SubAssign(node);
+                    SubForEnd(node);
+
+                    break;
+            }
+        }
+
+        private void SubForEachOrFor(TreeNode<string> node)
+        {
+            string next = LookAhead(2);
+            next = next.Remove(0, 1);
+
+            switch (next)
+            {
+                case "s, )":
+                case "s, {":
+
+                    Skip(lookahead);
+
+                    break;
+
+                case "o, :=":
+
+                    SubAssign(node);
+                    SubCond(node, true);
+                    Skip("s, ;");
+                    SubAssign(node);
+                    SubForEnd(node);
+
+                    break;
+
+                case "o, ==":
+                case "o, !=":
+                case "o, <=":
+                case "o, >=":
+                case "o, <":
+                case "o, >":
+                case "k, is":
+                case "k, not":
+
+                    SubCond(node, true);
+
+                    break;
+
+            }
+        }
+
+        private void SubForEnd(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "s, )":
+                case "s, {":
+
+                    Match(lookahead, node);
+                    
+                    break;
+            }
+        }
+        #endregion
+
+        #region IdentifierLogic
+
+        private void SubIdent(TreeNode<string> node)
+        {
+            Match("i", node);
+            switch (lookahead)
+            {
+                case "s, [":
+
+                    TreeNode<string> listnode = NewLayerResult(node, true, "ELEVAL");
+                    Match("s, [", listnode);
+                    SubListCall(listnode);
+                    Match("s, ]", listnode);
+                    SubIdentAdd(listnode);
+
+                    break;
+
+                case "s, (":
+
+                    TreeNode<string> callnode = NewLayerResult(node, true, "CALL");
+                    Match("s, (", callnode);
+                    SubCallParameters(callnode);
+                    Match("s, )", callnode);
+                    SubIdentAdd(callnode);
+
+                    break;
+
+                case "o, +":
+                case "o, -":
+                case "o, *":
+                case "o, /":
+                case "o, %":
+                case "o, ^":
+
+                    SubExpHandle(node);
+
+                    break;
+            }
+        }
+
+        private void SubIdentAdd(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "o, +":
+                case "o, -":
+                case "o, *":
+                case "o, /":
+                case "o, %":
+                case "o, ^":
+
+                    SubExpHandle(node);
+
+                    break;
+
+                case "s, ;":
+
+                    return;
 
 
+                case "o, &":
 
+                    TreeNode<string> stringnode = NewLayerResult(node, true, "STR");
+                    SubStringHandle(stringnode);
 
+                    break;
+            }
+        }
+
+        private void SubListCall(TreeNode<string> node)
+        {
+            switch (lookahead)
+            {
+                case "s, (":
+
+                    TreeNode<string> brexpnode = NewLayerResult(node, true, "EXP");
+                    SpecialBracketsCheck(brexpnode);
+
+                    break;
+
+                case "n":
+
+                    TreeNode<string> expnode = NewLayerResult(node, true, "EXP");
+                    Match("n", expnode);
+                    SubExpHandle(expnode);
+
+                    break;
+
+                case "i":
+
+                    TreeNode<string> identnode = NewLayerResult(node, true, "IDENT");
+                    SubIdent(identnode);
+
+                    break;
+            }
+        } 
+
+        #endregion
+
+        private void SubErrorHandling(TreeNode<string> node)
+        {
+            Skip("o, ?");
+            Match("s, {", node);
+            SubBodyMain(node);
+        }
 
         private TreeNode<string> NewLayerResult(TreeNode<string> leaf, bool newlayer, string nonterminal)
         {
@@ -724,7 +1132,7 @@ namespace LUC
         {
             if (lookahead.Equals(token))
             {
-                Console.WriteLine("Match");
+                Console.WriteLine("Match " + token);
 
                 TreeNode<string> node = new TreeNode<string>(lsttokens[0]);
                 leaf.AddChild(node);
@@ -742,6 +1150,7 @@ namespace LUC
 
         private void Skip(string token)
         {
+            Console.WriteLine("Skip " + token);
             if (lookahead.Equals(token))
             {
                 lsttokens.RemoveRange(0, 1);
