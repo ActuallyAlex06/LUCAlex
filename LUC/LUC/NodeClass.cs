@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace LUC
 {
+    //Class to create, maintain and call the syntax tree used in the syntax analysis.
     delegate void TreeVisitor<String>(string nodeData);
 
     class TreeNode<String>
@@ -21,6 +22,7 @@ namespace LUC
             children = new LinkedList<TreeNode<string>>();
         }
 
+        //Children can be strings and Treenodes, Treenodes are used for Nonterminals
         public void AddChild(string data)
         {
             children.AddLast(new TreeNode<string>(data));
@@ -31,14 +33,7 @@ namespace LUC
             children.AddLast(tree);
         }
 
-        public TreeNode<string> GetChild(int i)
-        {
-            foreach (TreeNode<string> n in children)
-                if (--i == 0)
-                    return n;
-            return null;
-        }
-
+        //Call als children of a spcific root and returns them
         public List<TreeNode<string>> GetAllChild()
         {
             List<TreeNode<string>> alltrees = new List<TreeNode<string>> { };
@@ -49,13 +44,6 @@ namespace LUC
             }
 
             return alltrees;
-        }
-
-        public void Traverse(TreeNode<string> node, TreeVisitor<string> visitor)
-        {
-            visitor(node.data);
-            foreach (TreeNode<string> kid in node.children)
-                Traverse(kid, visitor);
         }
 
         public string Data
